@@ -145,21 +145,34 @@ class php (
   Boolean $ext_tool_enabled                       = $::php::params::ext_tool_enabled,
   String $log_owner                               = $::php::params::fpm_user,
   String $log_group                               = $::php::params::fpm_group,
+  Boolean $force_old_merge_behavior               = true,
 ) inherits ::php::params {
 
   $real_fpm_package = pick($fpm_package, "${package_prefix}${::php::params::fpm_package_suffix}")
 
-  # Deep merge global php settings
-  $real_settings = deep_merge($settings, lookup('php::settings', {value_type => Hash, merge => 'deep', default_value => {}}))
+  if ($force_old_merge_behavior) {
+    deprecation('php_hiera_manual_lookup', 'the default deep merge behavior is a bug and will be removed in the next major release')
 
-  # Deep merge global php extensions
-  $real_extensions = deep_merge($extensions, lookup('php::extensions', {value_type => Hash, merge => 'deep', default_value => {}}))
+    # Deep merge global php settings
+    $real_settings = deep_merge($settings, lookup('php::settings', {value_type => Hash, merge => 'deep', default_value => {}}))
 
-  # Deep merge fpm_pools
-  $real_fpm_pools = deep_merge($fpm_pools, lookup('php::fpm_pools', {value_type => Hash, merge => 'deep', default_value => {}}))
+    # Deep merge global php extensions
+    $real_extensions = deep_merge($extensions, lookup('php::extensions', {value_type => Hash, merge => 'deep', default_value => {}}))
 
-  # Deep merge fpm_global_pool_settings
-  $real_fpm_global_pool_settings = deep_merge($fpm_global_pool_settings, lookup('php::fpm_global_pool_settings', {value_type => Hash, merge => 'deep', default_value => {}}))
+    # Deep merge fpm_pools
+    $real_fpm_pools = deep_merge($fpm_pools, lookup('php::fpm_pools', {value_type => Hash, merge => 'deep', default_value => {}}))
+
+    # Deep merge fpm_global_pool_settings
+    $real_fpm_global_pool_settings = deep_merge($fpm_global_pool_settings, lookup('php::fpm_global_pool_settings', {value_type => Hash, merge => 'deep', default_value => {}}))
+  } else {
+    $real_settings = $settings
+
+    $real_extensions = $extensions
+
+    $real_fpm_pools = $fpm_pools
+
+    $real_fpm_global_pool_settings = $fpm_global_pool_settings
+  }
 
   if $manage_repos {
     class { '::php::repo': }
